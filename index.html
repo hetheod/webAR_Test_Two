@@ -1,15 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My First WebAR</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR Button Test</title>
+  <style>
+    body { margin: 0; }
+    #scene-container { width: 100vw; height: 100vh; }
+    button { position: absolute; top: 10px; right: 10px; z-index: 10; }
+  </style>
 </head>
 <body>
-    <img id="targetImage" src="./Tracking_Image_Mitja.jpg" alt="Tracking_Image_Mitja" style="display:none" />
-    <div id="scene-container">
-        <!--Our <canvas> will be inserted here-->
-    </div>
-    <script type="module" src="/main.js"></script>
+  <div id="scene-container"></div>
+  <script type="module">
+    import * as THREE from 'three';
+    import { ARButton } from 'three/examples/jsm/ARButton.js';
+
+    let camera, scene, renderer;
+
+    function init() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.querySelector('#scene-container').appendChild(renderer.domElement);
+
+      const button = ARButton.createButton(renderer);
+      document.body.appendChild(button);
+
+      console.log('ARButton created and appended.');
+
+      renderer.setAnimationLoop(render);
+    }
+
+    function render() {
+      renderer.render(scene, camera);
+    }
+
+    init();
+  </script>
 </body>
 </html>
+
