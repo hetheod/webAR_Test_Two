@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AR Button Test</title>
+  <title>Three.js WebAR Image Tracking</title>
   <style>
     body { margin: 0; }
     #scene-container { width: 100vw; height: 100vh; }
@@ -11,30 +11,84 @@
   </style>
 </head>
 <body>
+  <img id="targetImage" src="Tracking_Image_Mitja.jpg" alt="Tracking Image" style="display: none;" />
   <div id="scene-container"></div>
   <script type="module">
-    import * as THREE from 'three';
-    import { ARButton } from 'three/examples/jsm/ARButton.js';
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.module.js';
+    import { ARButton } from 'https://cdn.jsdelivr.net/npm/three@0.153.0/examples/jsm/ARButton.js';
+    import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.153.0/examples/jsm/loaders/GLTFLoader.js';
 
-    let camera, scene, renderer;
+    let camera, scene, renderer, model;
 
-    function init() {
+    async function init() {
+      // Set up the scene
       scene = new THREE.Scene();
       camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
-
-      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.querySelector('#scene-container').appendChild(renderer.domElement);
+      renderer.xr.enabled = true;
 
-      const button = ARButton.createButton(renderer);
-      document.body.appendChild(button);
+      // Set up the AR button
+      const targetImage = document.getElementById('targetImage');
+      const targetImageBitmap = await createImageBitmap(targetImage);
 
-      console.log('ARButton created and appended.');
+      const arButton = ARButton.createButton(renderer, {
+        requiredFeatures: ['image-tracking'],
+        trackedImages: [
+          {
+            image: targetImageBitmap,
+            widthInMeters: 0.2
+          }
+        ],
+        optionalFeatures: ['dom-overlay'],
+        domOverlay: { root: document.body }
+      });
+      document.body.appendChild(arButton);
 
+      // Load a GLTF model
+      const loader = new GLTFLoader();
+      loader.load('city.glb', (gltf) => {
+        model = gltf.scene;
+        model.visible = false; // Initially hidden
+        scene.add(model);
+      }, undefined, (error) => {
+        console.error('Error loading model', error);
+      });
+
+      // Handle window resizing
+      window.addEventListener('resize', onWindowResize, false);
+
+      // Start rendering
       renderer.setAnimationLoop(render);
     }
 
-    function render() {
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function render(timestamp, frame) {
+      if (frame) {
+        const results = frame.getImageTrackingResults();
+        for (const result of results) {
+          if (result.index === 0) { // Check if the first image is tracked
+            const referenceSpace = renderer.xr.getReferenceSpace();
+            const pose = frame.getPose(result.imageSpace, referenceSpace);
+            if (pose) {
+              const matrix = new THREE.Matrix4();
+              matrix.fromArray(pose.transform.matrix);
+              model.matrix.fromArray(pose.transform.matrix);
+              model.matrixAutoUpdate = false;
+              model.visible = true; // Show the model
+            }
+          } else {
+            model.visible = false; // Hide the model if the image is not tracked
+          }
+        }
+      }
+
       renderer.render(scene, camera);
     }
 
@@ -42,4 +96,3 @@
   </script>
 </body>
 </html>
-
