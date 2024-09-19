@@ -9,3 +9,10 @@ body{
   width: 100x;
   height: 100x;
 }
+
+button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10; /* Make sure the button is above other content */
+}
