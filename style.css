@@ -1,0 +1,11 @@
+body{
+  /*remove margins and scroll bars*/
+  margin: 0;
+  overflow: hidden;
+}
+#scene-container{
+  /*scene container full page*/
+  position: absolute;
+  width: 100x;
+  height: 100x;
+}
